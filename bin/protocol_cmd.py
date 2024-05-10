@@ -335,8 +335,7 @@ class Starsolo:
             f'--readFilesIn {self.args.fq2} {self.args.fq1} \\\n'
             f'--readFilesCommand {self.read_command} \\\n'
             f'--outFileNamePrefix {prefix} \\\n'
-            f'--runThreadN {self.args.thread} \\\n'
-            f'{self.args.ext_args} \n'
+            f'{self.args.ext_args} '
         )
         logger.info(cmd)
         with open(self.cmd_fn, 'w') as f:
@@ -353,7 +352,6 @@ if __name__ == '__main__':
     parser.add_argument('--fq2', required=True)
     parser.add_argument('--assets_dir', required=True)
     parser.add_argument('--protocol', required=True)
-    parser.add_argument('--thread', required=True)
     parser.add_argument('--ext_args', required=True)
     parser.add_argument('--whitelist')
     parser.add_argument('--pattern')

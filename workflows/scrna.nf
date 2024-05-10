@@ -168,7 +168,6 @@ process PROTOCOL_CMD {
         --fq2 ${reverse.join( "," )} \\
         --assets_dir ${assets_dir} \\
         --protocol ${protocol} \\
-        --thread $task.cpus \\
         --pattern ${params.pattern} \\
         --whitelist \"${params.whitelist}\" \\
         --ext_args \"${args}\" \\
@@ -219,7 +218,7 @@ process STARSOLO {
 
     // do not indent
 """
-${starsolo_cmd}
+${starsolo_cmd} --runThreadN ${task.cpus}
 
 if [ -d ${prefix}.Solo.out ]; then
     # Backslashes still need to be escaped (https://github.com/nextflow-io/nextflow/issues/67)
@@ -322,6 +321,7 @@ workflow SCRNA {
         ch_starsolo_cmd,
     )
     ch_versions = ch_versions.mix(STARSOLO.out.versions.first())
+    ch_multiqc_files = ch_multiqc_files.mix(STARSOLO.out.log_final.collect())
 
     // statsolo summary
     STARSOLO_SUMMARY (
