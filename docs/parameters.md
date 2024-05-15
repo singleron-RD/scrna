@@ -45,7 +45,7 @@ Genome files and parameters.
 | `soloFeatures` | Quantification of different transcriptomic features. <details><summary>Help</summary><small>https://github.com/alexdobin/STAR/issues/1460  <br>--soloFeatures SJ quantifies splice junctions by calculating per-cell counts ofreads that are spliced across junctions. It will count spliced reads across annotatedand unannotated junctions, thus allowing analysis of inter-cell alternative splicing and detection of novel splice isoforms.  <br>--soloFeatures Velocyto performs separate counting for spliced, unsplicedand ambiguous reads, similar to the Velocyto tool . Its output can be usedin the RNA-velocity analyses to dissect the transcriptional dynamics of the cells.  </small></details>| `string` | GeneFull_Ex50pAS |  |  |
 | `outFilterMatchNmin` | Alignment will be output only if the number of matched bases is higher than or equal to this value. <details><summary>Help</summary><small>Use default 50 to filter potential short prime sequences.</small></details>| `integer` | 50 |  |  |
 | `soloCellFilter` | Cell-calling method. <details><summary>Help</summary><small>https://github.com/alexdobin/STAR/blob/master/docs/STARsolo.md#cell-filtering-calling</small></details>| `string` | EmptyDrops_CR 3000 0.99 10 45000 90000 1000 0.01 20000 0.001 10000 |  |  |
-| `outSAMattributes` | Output tags in SAM/BAM. <details><summary>Help</summary><small>https://github.com/alexdobin/STAR/blob/master/docs/STARsolo.md#bam-tags</small></details>| `string` | NH HI nM AS CR UR CB UB GX GN |  |  |
+| `outSAMattributes` | Output tags in SAM/BAM. <details><summary>Help</summary><small>https://github.com/alexdobin/STAR/blob/master/docs/STARsolo.md#bam-tags</small></details>| `string` | NH HI nM AS CR UR CB UB GX GN sF |  |  |
 | `starsolo_extra_args` | Extra STARSolo arguments to use. | `string` | --clip3pAdapterSeq AAAAAAAAAAAA --outSAMtype BAM SortedByCoordinate |  |  |
 
 ## Max job request options
@@ -65,7 +65,7 @@ Parameters used to describe centralised config profiles. These should not be edi
 | Parameter | Description | Type | Default | Required | Hidden |
 |-----------|-----------|-----------|-----------|-----------|-----------|
 | `custom_config_version` | Git commit id for Institutional configs. | `string` | master |  | True |
-| `custom_config_base` | Base directory for Institutional configs. <details><summary>Help</summary><small>If you're running offline, Nextflow will not be able to fetch the institutional config files from the internet. If you don't need them, then this is not a problem. If you do need them, you should download the files from the repo and tell Nextflow where to find them with this parameter.</small></details>| `string` | https://raw.githubusercontent.com/nf-core/configs/master |  | True |
+| `custom_config_base` | Base directory for Institutional configs. <details><summary>Help</summary><small>If you're running offline, Nextflow will not be able to fetch the institutional config files from the internet. If you don't need them, then this is not a problem. If you do need them, you should download the files from the repo and tell Nextflow where to find them with this parameter.</small></details>| `string` |  |  | True |
 | `config_profile_name` | Institutional config name. | `string` |  |  | True |
 | `config_profile_description` | Institutional config description. | `string` |  |  | True |
 | `config_profile_contact` | Institutional config contact information. | `string` |  |  | True |
