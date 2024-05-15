@@ -268,8 +268,8 @@ process SUBSAMPLE {
     tag "$meta.id"
     label 'process_single'
 
-    conda 'conda-forge::pysam==0.22.1'
-    container "biocontainers/pysam:0.22.1"
+    conda 'bioconda::pysam==0.22.1'
+    container "biocontainers/pysam:0.22.1--py38h15b938a_0"
 
     input:
     tuple val(meta), path(bam)

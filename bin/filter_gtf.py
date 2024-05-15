@@ -8,10 +8,11 @@ import re
 import sys
 
 PATTERN = re.compile(r'(\S+?)\s*"(.*?)"')
-gtf_row = collections.namedtuple( 'gtf_row', 'seqname source feature start end score strand frame attributes' )
+gtf_row = collections.namedtuple("gtf_row", "seqname source feature start end score strand frame attributes")
+
 
 def generic_open(file_name, *args, **kwargs):
-    if file_name.endswith('.gz'):
+    if file_name.endswith(".gz"):
         file_obj = gzip.open(file_name, *args, **kwargs)
     else:
         file_obj = open(file_name, *args, **kwargs)
@@ -35,7 +36,7 @@ class GtfParser:
             return properties_str
 
         properties = collections.OrderedDict()
-        attrs = properties_str.split(';')
+        attrs = properties_str.split(";")
         for attr in attrs:
             if attr:
                 m = re.search(PATTERN, attr)
@@ -52,35 +53,34 @@ class GtfParser:
             row: list
             gtf_row
         """
-        with generic_open(self.gtf_fn, mode='rt') as f:
-            reader = csv.reader(f, delimiter='\t')
+        with generic_open(self.gtf_fn, mode="rt") as f:
+            reader = csv.reader(f, delimiter="\t")
             for i, row in enumerate(reader, start=1):
                 if len(row) == 0:
                     continue
-                if row[0].startswith('#'):
+                if row[0].startswith("#"):
                     yield row, None
                     continue
 
                 if len(row) != 9:
                     sys.exit(f"Invalid number of columns in GTF line {i}: {row}\n")
 
-                if row[6] not in ['+', '-']:
+                if row[6] not in ["+", "-"]:
                     sys.exit(f"Invalid strand in GTF line {i}: {row}\n")
 
                 seqname = row[0]
-                source  = row[1]
+                source = row[1]
                 feature = row[2]
                 # gff/gtf is 1-based, end-inclusive
-                start   = int(row[3])
-                end     = int(row[4])
-                score   = row[5]
-                strand  = row[6]
-                frame  = row[7]
+                start = int(row[3])
+                end = int(row[4])
+                score = row[5]
+                strand = row[6]
+                frame = row[7]
                 attributes = self.get_properties_dict(row[8])
 
-                yield row, gtf_row( seqname, source, feature, \
-                    start, end, score, strand, frame, \
-                    attributes )
+                yield row, gtf_row(seqname, source, feature, start, end, score, strand, frame, attributes)
+
 
 def filter_gtf(gtf_fn, out_fn, allow):
     """
@@ -95,14 +95,13 @@ def filter_gtf(gtf_fn, out_fn, allow):
     gp = GtfParser(gtf_fn)
     n_filter = 0
 
-    with open(out_fn, 'w') as f:
+    with open(out_fn, "w") as f:
         # quotechar='' is not allowed since python3.11
-        writer = csv.writer(f, delimiter='\t', quoting=csv.QUOTE_NONE, quotechar=None)
+        writer = csv.writer(f, delimiter="\t", quoting=csv.QUOTE_NONE, quotechar=None)
         for row, grow in gp.gtf_reader_iter():
             if not grow:
                 writer.writerow(row)
                 continue
-
 
             remove = False
             if allow:
@@ -118,25 +117,23 @@ def filter_gtf(gtf_fn, out_fn, allow):
     return n_filter
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # args: gtf, attributes
     gtf_fn = sys.argv[1]
     attributes = sys.argv[2]
-    out_fn = os.path.basename(gtf_fn).replace('.gtf', '.filtered.gtf')
+    out_fn = os.path.basename(gtf_fn).replace(".gtf", ".filtered.gtf")
 
     allow = {}
-    for attr_str in attributes.split(';'):
+    for attr_str in attributes.split(";"):
         if attr_str:
-            attr, val = attr_str.split('=')
-            val = set(val.split(','))
+            attr, val = attr_str.split("=")
+            val = set(val.split(","))
             allow[attr] = val
 
     n_filter = filter_gtf(gtf_fn, out_fn, allow)
     sys.stdout.write(f"Filtered {n_filter} lines\n")
     log_file = "gtf_filter.log"
-    with open(log_file, 'w') as f:
+    with open(log_file, "w") as f:
         f.write(f"Filtered lines: {n_filter}\n")
         f.write(f"Attributes: {attributes}\n")
         f.write(f"Output file: {out_fn}\n")
-
-
