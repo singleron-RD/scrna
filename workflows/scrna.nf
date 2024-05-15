@@ -144,10 +144,8 @@ process PROTOCOL_CMD {
     path assets_dir
     val protocol
 
-
     output:
-    tuple val(meta), path(reads), emit: reads
-    path "${meta.id}.starsolo_cmd.txt", emit: starsolo_cmd
+    tuple val(meta), path("${meta.id}.starsolo_cmd.txt"), emit: starsolo_cmd
     path "${meta.id}.protocol.txt", emit: parsed_protocol
     path  "versions.yml" , emit: versions
 
@@ -189,10 +187,9 @@ process STARSOLO {
         'biocontainers/star:2.7.11b--h43eeafb_0' }"
 
     input:
-    tuple val(meta), path(reads)
+    tuple val(meta), path(reads), val(starsolo_cmd)
     path index
     path assets_dir
-    val starsolo_cmd
 
     output:
     tuple val(meta), path("${meta.id}.matrix/")       , emit: matrix
@@ -334,15 +331,17 @@ workflow SCRNA {
         params.protocol,
     )
     ch_versions = ch_versions.mix(PROTOCOL_CMD.out.versions.first())
-    ch_reads = PROTOCOL_CMD.out.reads
-    ch_starsolo_cmd = PROTOCOL_CMD.out.starsolo_cmd.map { it.text }
+    ch_input = ch_samplesheet.concat(PROTOCOL_CMD.out.starsolo_cmd)
+                .groupTuple()
+                .map {
+                    it -> [it[0], it[1][0], it[1][1].text]
+                }
 
     // starsolo
     STARSOLO (
-        ch_reads,
+        ch_input,
         star_genome,
         "${projectDir}/assets/",
-        ch_starsolo_cmd,
     )
     ch_versions = ch_versions.mix(STARSOLO.out.versions.first())
     ch_multiqc_files = ch_multiqc_files.mix(STARSOLO.out.log_final.collect())
