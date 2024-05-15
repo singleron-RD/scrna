@@ -204,7 +204,7 @@ process STARSOLO {
     path "${meta.id}.matrix/filtered/barcodes.tsv.gz" , emit: barcodes
     path  "versions.yml"                      , emit: versions
 
-    tuple val(meta), path('*sortedByCoord.out.bam')  , optional:true, emit: bam_sorted
+    tuple val(meta), path('*sortedByCoord.out.bam')  , emit: bam_sorted
     tuple val(meta), path('*toTranscriptome.out.bam'), optional:true, emit: bam_transcript
     tuple val(meta), path('*Aligned.unsort.out.bam') , optional:true, emit: bam_unsorted
     tuple val(meta), path('*out.mate')               , optional:true, emit: unmap
@@ -261,6 +261,30 @@ process STARSOLO_SUMMARY {
         --barcodes ${barcodes} \\
         --summary ${summary} \\
         --sample ${meta.id}
+    """
+}
+
+process SUBSAMPLE {
+    tag "$meta.id"
+    label 'process_single'
+
+    conda 'conda-forge::pysam==0.22.1'
+    container "biocontainers/pysam:0.22.1"
+
+    input:
+    tuple val(meta), path(bam)
+    path barcodes
+
+    output:
+    path "*.json", emit: out_json
+
+    script:
+
+    """
+    subsample.py \\
+        -b ${bam} \\
+        -c ${barcodes} \\
+        -s ${meta.id}
     """
 }
 
@@ -330,6 +354,12 @@ workflow SCRNA {
         STARSOLO.out.barcodes,
     )
     ch_multiqc_files = ch_multiqc_files.mix(STARSOLO_SUMMARY.out.read_stats_json.collect()).mix(STARSOLO_SUMMARY.out.summary_json.collect()).mix(STARSOLO_SUMMARY.out.umi_count_json.collect())
+
+    SUBSAMPLE (
+        STARSOLO.out.bam_sorted,
+        STARSOLO.out.barcodes,
+    )
+    ch_multiqc_files = ch_multiqc_files.mix(SUBSAMPLE.out.out_json.collect())
 
     //
     // Collate and save software versions
