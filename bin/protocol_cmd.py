@@ -149,7 +149,6 @@ class Protocol:
     GEXSCOPE-MicroBead
     GEXSCOPE-V1
     GEXSCOPE-V2
-    sCircle-V1
     """
 
     def __init__(self, fq1_list, sample, assets_dir="assets/", max_read=10000):
@@ -161,7 +160,6 @@ class Protocol:
         self.max_read = max_read
         self.sample = sample
         self.protocol_dict = get_protocol_dict(assets_dir)
-        self.scircle_R1_LEN = self.protocol_dict["GEXSCOPE-sCircle"]["pattern_dict"]["U"][-1].stop
 
     def get_protocol(self):
         """check protocol in the fq1_list"""
@@ -199,22 +197,16 @@ class Protocol:
         'GEXSCOPE-V1'
         >>> seq = "NCAGATTC" + "TCGGTGACAGCCATAT" + "GTACGCAA" + "CGTAGTCAGAAGCTGA" + "CTGAGCCA"  + "TCCGAAGCC" + "CTGTCT"
         >>> runner.seq_protocol(seq)
-        'GEXSCOPE-sCircle'
+        'GEXSCOPE-V1'
         >>> seq = "NCAGATTC" + "TCGGTGACAGCCATAT" + "GTACGCAA" + "CGTAGTCAGAAGCTGA" + "CTGAGCCA"  + "TCCGAAGCC"
         >>> runner.seq_protocol(seq)
-        'GEXSCOPE-sCircle'
+        'GEXSCOPE-V1'
         >>> seq = "ATCGATCGATCG" + "ATCGATCG" + "C" + "TTTTTTTTTT"
         >>> runner.seq_protocol(seq)
         'GEXSCOPE-MicroBead'
         """
-        # check "GEXSCOPE-sCircle" first as it is similar to "GEXSCOPE-V1"
-        protocol = "GEXSCOPE-sCircle"
-        if self.check_linker(seq, protocol, 1) and (
-            len(seq) == self.scircle_R1_LEN or self.check_linker(seq, protocol, 3)
-        ):
-            return protocol
 
-        for protocol in ["GEXSCOPE-V1", "GEXSCOPE-V2"]:
+        for protocol in ["GEXSCOPE-V2", "GEXSCOPE-V1"]:
             if self.check_linker(seq, protocol, 1):
                 return protocol
 
