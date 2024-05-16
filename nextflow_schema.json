@@ -134,7 +134,7 @@
                 },
                 "soloCellFilter": {
                     "type": "string",
-                    "default": "EmptyDrops_CR 3000 0.99 10 45000 90000 1000 0.01 20000 0.001 10000",
+                    "default": "EmptyDrops_CR 3000 0.99 10 45000 90000 500 0.01 20000 0.001 10000",
                     "description": "Cell-calling method.",
                     "help_text": "https://github.com/alexdobin/STAR/blob/master/docs/STARsolo.md#cell-filtering-calling"
                 },
