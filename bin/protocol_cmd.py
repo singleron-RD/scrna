@@ -1,244 +1,13 @@
 #!/usr/bin/env python
 
 import argparse
-import itertools
-import json
-import logging
-import os
-import re
 import sys
-from collections import defaultdict
 
-import pyfastx
+import parse_protocol
+import utils
 
-logger = logging.getLogger(__name__)
+logger = utils.get_logger(__name__)
 SOLOFEATURE = "GeneFull_Ex50pAS"
-
-
-def get_seq_str(seq, sub_pattern):
-    """
-    join seq slices.
-
-    Args:
-        seq: usually R1 read
-        sub_pattern: [slice(0,8),slice(16,24)]
-
-    Returns:
-        joined intervals seq
-
-    Raises:
-        IndexError: if seq length is not enough.
-
-    >>> sub_pattern_dict = [slice(0,2)]
-    >>> seq = "A" * 2 + "T" * 2
-    >>> get_seq_str(seq, sub_pattern_dict)
-    'AA'
-    """
-    seq_len = len(seq)
-    expect_len = sub_pattern[-1].stop
-    if seq_len < expect_len:
-        raise IndexError(f"read length({seq_len} bp) less than expected length({expect_len} bp) in read: {seq}")
-    return "".join([seq[x] for x in sub_pattern])
-
-
-def findall_mismatch(seq, n_mismatch=1, bases="ACGTN"):
-    """
-    choose locations where there's going to be a mismatch using combinations
-    and then construct all satisfying lists using product
-
-    Return:
-    all mismatch <= n_mismatch set.
-
-    >>> answer = set(["TCG", "AAG", "ACC", "ATG", "ACT", "ACN", "GCG", "ANG", "ACA", "ACG", "CCG", "AGG", "NCG"])
-    >>> seq_set = findall_mismatch("ACG")
-    >>> seq_set == answer
-    True
-    """
-    seq_set = set()
-    seq_len = len(seq)
-    if n_mismatch > seq_len:
-        n_mismatch = seq_len
-    for locs in itertools.combinations(range(seq_len), n_mismatch):
-        seq_locs = [[base] for base in seq]
-        for loc in locs:
-            seq_locs[loc] = list(bases)
-        for poss in itertools.product(*seq_locs):
-            seq_set.add("".join(poss))
-    return seq_set
-
-
-def get_mismatch_dict(seq_list, n_mismatch=1):
-    """
-    Return:
-    mismatch dict. Key: mismatch seq, value: seq in seq_list
-
-    >>> seq_list = ["AACGTGAT", "AAACATCG"]
-    >>> mismatch_dict = get_mismatch_dict(seq_list)
-    >>> mismatch_dict["AACGTGAA"] == "AACGTGAT"
-    True
-    """
-    mismatch_dict = {}
-    for seq in seq_list:
-        seq = seq.strip()
-        if seq == "":
-            continue
-        for mismatch_seq in findall_mismatch(seq, n_mismatch):
-            mismatch_dict[mismatch_seq] = seq
-    return mismatch_dict
-
-
-def read_one_col(fn):
-    """read one column file into list"""
-    with open(fn) as f:
-        return [x.strip() for x in f]
-
-
-def parse_pattern(pattern, allowed="CLUNT"):
-    """
-    >>> pattern_dict = parse_pattern("C8L16C8L16C8L1U12T18")
-    >>> pattern_dict['C']
-    [slice(0, 8, None), slice(24, 32, None), slice(48, 56, None)]
-    >>> pattern_dict['L']
-    [slice(8, 24, None), slice(32, 48, None), slice(56, 57, None)]
-    """
-    pattern_dict = {}
-    p = re.compile(r"([A-Z])(\d+)")
-    tmp = p.findall(pattern)
-    if not tmp:
-        sys.exit(f"Invalid pattern: {pattern}")
-    start = 0
-    for x, length in tmp:
-        if x not in allowed:
-            sys.exit(f"Invalid pattern: {pattern}")
-        if x not in pattern_dict:
-            pattern_dict[x] = []
-        end = start + int(length)
-        pattern_dict[x].append(slice(start, end))
-        start = end
-    return pattern_dict
-
-
-def get_protocol_dict(assets_dir):
-    """
-    Return:
-    protocol_dict. Key: protocol name, value: protocol dict
-
-    >>> protocol_dict = get_protocol_dict("./assets/")
-    >>> protocol_dict["GEXSCOPE-MicroBead"]["pattern_dict"]
-    {'C': [slice(0, 12, None)], 'U': [slice(12, 20, None)]}
-    """
-    json_file = os.path.join(assets_dir, "protocols.json")
-    protocol_dict = json.load(open(json_file))
-    whitelist_dir = os.path.join(assets_dir, "whitelist")
-    # add folder prefix
-    for protocol in protocol_dict:
-        cur = protocol_dict[protocol]
-        bc = cur.get("bc", [])
-        linker = cur.get("linker", [])
-        if bc:
-            cur["bc"] = [os.path.join(whitelist_dir, protocol, x) for x in bc]
-        if linker:
-            cur["linker"] = [os.path.join(whitelist_dir, protocol, x) for x in linker]
-        cur["pattern_dict"] = parse_pattern(cur["pattern"])
-    return protocol_dict
-
-
-class Protocol:
-    """
-    Auto detect singleron protocols from R1-read
-    GEXSCOPE-MicroBead
-    GEXSCOPE-V1
-    GEXSCOPE-V2
-    """
-
-    def __init__(self, fq1_list, sample, assets_dir="assets/", max_read=10000):
-        """
-        Args:
-            assets_dir: Expects file 'protocols.json' and 'whitelist/{protocol}' folder under assets_dir
-        """
-        self.fq1_list = fq1_list
-        self.max_read = max_read
-        self.sample = sample
-        self.protocol_dict = get_protocol_dict(assets_dir)
-
-    def get_protocol(self):
-        """check protocol in the fq1_list"""
-        fq_protocol = {}
-        for fastq1 in self.fq1_list:
-            protocol = self.get_fq_protocol(fastq1)
-            fq_protocol[fastq1] = protocol
-        if len(set(fq_protocol.values())) != 1:
-            sys.exit(f"Error: multiple protocols are not allowed for one sample: {self.sample}! \n" + str(fq_protocol))
-        protocol = list(fq_protocol.values())[0]
-        return protocol
-
-    def check_linker(self, seq, protocol, i):
-        """check if seq matches the linker i of protocol"""
-        linker_fn = self.protocol_dict[protocol]["linker"]
-        linker = read_one_col(linker_fn[i - 1])
-        linker_mismatch_dict = get_mismatch_dict(linker)
-
-        pattern = self.protocol_dict[protocol]["pattern"]
-        pattern_dict = parse_pattern(pattern)
-        seq_linker = seq[pattern_dict["L"][i - 1]]
-
-        return seq_linker in linker_mismatch_dict
-
-    def seq_protocol(self, seq):
-        """
-        Returns: protocol or None
-
-        >>> runner = Protocol("fake_fq1_string", "fake_sample")
-        >>> seq = "TCGACTGTC" + "ATCCACGTGCTTGAGA" + "TTCTAGGAT" + "TCAGCATGCGGCTACG" + "TGCACGAGA" + "C" + "CATATCAATGGG" + "TTTTTTTTTT"
-        >>> runner.seq_protocol(seq)
-        'GEXSCOPE-V2'
-        >>> seq = "NCAGATTC" + "TCGGTGACAGCCATAT" + "GTACGCAA" + "CGTAGTCAGAAGCTGA" + "CTGAGCCA" + "C" + "TCCGAAGCCCAT" + "TTTTTTTTTT"
-        >>> runner.seq_protocol(seq)
-        'GEXSCOPE-V1'
-        >>> seq = "NCAGATTC" + "TCGGTGACAGCCATAT" + "GTACGCAA" + "CGTAGTCAGAAGCTGA" + "CTGAGCCA"  + "TCCGAAGCC" + "CTGTCT"
-        >>> runner.seq_protocol(seq)
-        'GEXSCOPE-V1'
-        >>> seq = "NCAGATTC" + "TCGGTGACAGCCATAT" + "GTACGCAA" + "CGTAGTCAGAAGCTGA" + "CTGAGCCA"  + "TCCGAAGCC"
-        >>> runner.seq_protocol(seq)
-        'GEXSCOPE-V1'
-        >>> seq = "ATCGATCGATCG" + "ATCGATCG" + "C" + "TTTTTTTTTT"
-        >>> runner.seq_protocol(seq)
-        'GEXSCOPE-MicroBead'
-        """
-
-        for protocol in ["GEXSCOPE-V2", "GEXSCOPE-V1"]:
-            if self.check_linker(seq, protocol, 1):
-                return protocol
-
-        # check if it is MicroBead
-        if seq[16:20] != "TTTT" and seq[22:26] == "TTTT":
-            return "GEXSCOPE-MicroBead"
-
-    def get_fq_protocol(self, fq1):
-        results = defaultdict(int)
-
-        fq = pyfastx.Fastx(fq1)
-        n = 0
-        for name, seq, qual in fq:
-            n += 1
-            protocol = self.seq_protocol(seq)
-            if protocol:
-                results[protocol] += 1
-            if n == self.max_read:
-                break
-        sorted_counts = sorted(results.items(), key=lambda x: x[1], reverse=True)
-        logger.info(sorted_counts)
-
-        protocol, read_counts = sorted_counts[0]
-        percent = float(read_counts) / n
-        if percent < 0.5:
-            logger.warning("Valid protocol read counts percent < 0.5")
-        if percent < 0.1:
-            logger.error("Valid protocol read counts percent < 0.1")
-            raise Exception("Auto protocol detection failed! ")
-        logger.info(f"{fq1}: {protocol}")
-
-        return protocol
 
 
 class Starsolo:
@@ -256,17 +25,18 @@ class Starsolo:
             self.read_command = "zcat"
 
         if args.protocol == "auto":
-            protocol = Protocol(fq1_list, args.sample).get_protocol()
+            runner = parse_protocol.Auto(fq1_list, args.sample)
+            protocol, protocol_meta = runner.run()
         else:
             protocol = args.protocol
-        protocol_dict = get_protocol_dict(args.assets_dir)
+            protocol_meta = parse_protocol.get_protocol_dict(args.assets_dir)[protocol]
 
         if protocol == "new":
             pattern = args.pattern
             whitelist_str = args.whitelist
         else:
-            pattern = protocol_dict[protocol]["pattern"]
-            whitelist_str = " ".join(protocol_dict[protocol].get("bc", []))
+            pattern = protocol_meta["pattern"]
+            whitelist_str = " ".join(protocol_meta.get("bc", []))
 
         pattern_args = Starsolo.get_solo_pattern(pattern)
         if not whitelist_str:
@@ -287,7 +57,7 @@ class Starsolo:
         Returns:
             starsolo_cb_umi_args
         """
-        pattern_dict = parse_pattern(pattern)
+        pattern_dict = parse_protocol.parse_pattern(pattern)
         if len(pattern_dict["U"]) != 1:
             sys.exit(f"Error: Wrong pattern:{pattern}. \n Solution: fix pattern so that UMI only have 1 position.\n")
         ul = pattern_dict["U"][0].start

@@ -375,5 +375,10 @@
         {
             "$ref": "#/definitions/generic_options"
         }
-    ]
+    ],
+    "properties": {
+        "run_subsample": {
+            "type": "boolean"
+        }
+    }
 }

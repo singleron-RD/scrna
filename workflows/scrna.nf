@@ -263,7 +263,8 @@ process STARSOLO_SUMMARY {
 
 process SUBSAMPLE {
     tag "$meta.id"
-    label 'process_single'
+    cpus '1'
+    memory '32 GB'
 
     conda 'bioconda::pysam==0.22.1'
     container "biocontainers/pysam:0.22.1--py38h15b938a_0"
@@ -354,11 +355,14 @@ workflow SCRNA {
     )
     ch_multiqc_files = ch_multiqc_files.mix(STARSOLO_SUMMARY.out.read_stats_json.collect()).mix(STARSOLO_SUMMARY.out.summary_json.collect()).mix(STARSOLO_SUMMARY.out.umi_count_json.collect())
 
-    SUBSAMPLE (
-        STARSOLO.out.bam_sorted,
-        STARSOLO.out.barcodes,
-    )
-    ch_multiqc_files = ch_multiqc_files.mix(SUBSAMPLE.out.out_json.collect())
+    if (params.run_subsample) {
+        SUBSAMPLE (
+            STARSOLO.out.bam_sorted,
+            STARSOLO.out.barcodes,
+        )
+        ch_multiqc_files = ch_multiqc_files.mix(SUBSAMPLE.out.out_json.collect())
+    }
+
 
     //
     // Collate and save software versions

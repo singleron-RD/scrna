@@ -57,19 +57,38 @@ def get_records(bam_file):
     return a, cb_int
 
 
-def sub(a, barcodes, fraction):
+def sub_saturation(a):
     """get saturation and median gene"""
-    total = int(len(a) * fraction)
-    b = a[:total]
-    uniq = len(set(b))
+    n = len(a)
+    fraction_saturation = {0.0: 0.0}
+    for fraction in range(1, 11):
+        fraction /= 10.0
+        nread = int(n * fraction)
+        uniq = len(set(a[:nread]))
+        saturation = 1 - float(uniq) / nread
+        saturation = round(saturation * 100, 2)
+        fraction_saturation[fraction] = saturation
+    return fraction_saturation
+
+
+def sub_gene(a, barcodes):
+    """get median gene for each fraction"""
+    nread_fraction = {}
+    n = len(a)
+    for fraction in range(11):
+        fraction /= 10.0
+        nread = int(n * fraction)
+        nread_fraction[nread] = fraction
+
+    fraction_mg = {0.0: 0}
     cb_gx = defaultdict(set)
-    for cb, _, gx in b:
+    for i, (cb, _, gx) in enumerate(a, start=1):
         if cb in barcodes:
             cb_gx[cb].add(gx)
-    saturation = 1 - float(uniq) / total
-    saturation = round(saturation * 100, 2)
-    median_gene = int(statistics.median([len(x) for x in cb_gx.values()]))
-    return saturation, median_gene
+        if i in nread_fraction:
+            fraction = nread_fraction[i]
+            fraction_mg[fraction] = int(statistics.median([len(x) for x in cb_gx.values()]))
+    return fraction_mg
 
 
 def main(args):
@@ -79,14 +98,9 @@ def main(args):
     barcodes = set(cb_dict[x] for x in barcodes)
     random.seed(0)
     random.shuffle(a)
-    fraction_saturation = {0.0: 0.0}
-    fraction_mg = {0.0: 0}
-    for fraction in range(1, 11):
-        fraction /= 10.0
-        saturation, median_gene = sub(a, barcodes, fraction)
-        fraction_saturation[fraction] = saturation
-        fraction_mg[fraction] = median_gene
 
+    fraction_saturation = sub_saturation(a)
+    fraction_mg = sub_gene(a, barcodes)
     saturation_file = f"{args.sample}.saturation.json"
     median_gene_file = f"{args.sample}.median_gene.json"
     # write json
