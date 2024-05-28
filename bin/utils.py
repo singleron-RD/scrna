@@ -1,3 +1,4 @@
+import csv
 import gzip
 import json
 import logging
@@ -41,6 +42,18 @@ def get_logger(name, level=logging.INFO):
 def write_json(data, fn):
     with open(fn, "w") as f:
         json.dump(data, f, indent=4)
+
+
+def get_frac(raw_frac: float):
+    return round(float(raw_frac) * 100, 2)
+
+
+def csv2dict(csv_file):
+    data = {}
+    reader = csv.reader(openfile(csv_file))
+    for row in reader:
+        data[row[0]] = row[1]
+    return data
 
 
 def add_log(func):

@@ -101,8 +101,8 @@ def main(args):
 
     fraction_saturation = sub_saturation(a)
     fraction_mg = sub_gene(a, barcodes)
-    saturation_file = f"{args.sample}.saturation.json"
-    median_gene_file = f"{args.sample}.median_gene.json"
+    saturation_file = f"{args.sample}.scrna.saturation.json"
+    median_gene_file = f"{args.sample}.scrna.median_gene.json"
     # write json
     with open(saturation_file, "w") as f:
         f.write(json.dumps(fraction_saturation))

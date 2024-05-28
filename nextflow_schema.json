@@ -151,6 +151,22 @@
                 }
             }
         },
+        "optional_modules": {
+            "title": "Optional modules",
+            "type": "object",
+            "description": "",
+            "default": "",
+            "properties": {
+                "run_subsample": {
+                    "type": "boolean",
+                    "description": "Subsample the bam file to plot saturation and median gene curve."
+                },
+                "run_fastqc": {
+                    "type": "boolean",
+                    "description": "FastQC of raw reads."
+                }
+            }
+        },
         "max_job_request_options": {
             "title": "Max job request options",
             "type": "object",
@@ -367,6 +383,9 @@
             "$ref": "#/definitions/starsolo_options"
         },
         {
+            "$ref": "#/definitions/optional_modules"
+        },
+        {
             "$ref": "#/definitions/max_job_request_options"
         },
         {
@@ -375,10 +394,5 @@
         {
             "$ref": "#/definitions/generic_options"
         }
-    ],
-    "properties": {
-        "run_subsample": {
-            "type": "boolean"
-        }
-    }
+    ]
 }

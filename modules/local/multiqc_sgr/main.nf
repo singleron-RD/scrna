@@ -1,14 +1,16 @@
 process MULTIQC {
     label 'process_single'
 
-    conda "${moduleDir}/environment.yml"
-    container "quay.io/singleron-rd/multiqc_sgr:1.21.4"
+    conda "bioconda::multiqc==1.21"
+    container "biocontainers/multiqc:1.21--pyhdfd78af_0"
+    containerOptions '--env HOME=/tmp'
 
     input:
     path  multiqc_files, stageAs: "?/*"
     path(multiqc_config)
     path(extra_multiqc_config)
     path(multiqc_logo)
+    path(multiqc_plugin)
 
     output:
     path "*multiqc_report.html", emit: report
@@ -24,7 +26,15 @@ process MULTIQC {
     def config = multiqc_config ? "--config $multiqc_config" : ''
     def extra_config = extra_multiqc_config ? "--config $extra_multiqc_config" : ''
     def logo = multiqc_logo ? /--cl-config 'custom_logo: "${multiqc_logo}"'/ : ''
+    def is_docker = workflow.profile.tokenize(',').intersect(['docker', 'singularity']).size() >= 1
+    def pipuser = is_docker ? '--user' : ''
+    def pythonuser = is_docker ? 'export PYTHONNOUSERSITE=0' : 'export PYTHONNOUSERSITE=1'
     """
+    cp -r -L ./${multiqc_plugin} ./multiqc.plugin
+    if [ -d ./multiqc.plugin/build ]; then rm -r ./multiqc.plugin/build; fi
+    pip install ./multiqc.plugin --no-cache-dir --no-deps --force-reinstall $pipuser
+    $pythonuser
+    python -m site
     multiqc \\
         --force \\
         $args \\

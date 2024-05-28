@@ -30,6 +30,7 @@ class Starsolo:
         else:
             protocol = args.protocol
             protocol_meta = parse_protocol.get_protocol_dict(args.assets_dir)[protocol]
+        self.protocol = protocol
 
         if protocol == "new":
             pattern = args.pattern
@@ -45,11 +46,6 @@ class Starsolo:
 
         # out cmd
         self.cmd_fn = args.sample + ".starsolo_cmd.txt"
-        protocol_fn = args.sample + ".protocol.txt"
-
-        # write protocol
-        with open(protocol_fn, "w") as fout:
-            fout.write(f"{protocol}")
 
     @staticmethod
     def get_solo_pattern(pattern) -> str:
@@ -101,6 +97,10 @@ class Starsolo:
         with open(self.cmd_fn, "w") as f:
             f.write(cmd)
 
+    def write_stats(self, assay):
+        fn = f"{self.args.sample}.{assay}.protocol.stats.json"
+        utils.write_json({"Protocol": self.protocol}, fn)
+
 
 if __name__ == "__main__":
     """
@@ -122,3 +122,4 @@ if __name__ == "__main__":
 
     runner = Starsolo(args)
     runner.write_cmd()
+    runner.write_stats("scrna")

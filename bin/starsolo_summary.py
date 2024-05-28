@@ -1,37 +1,22 @@
 #!/usr/bin/env python
 
 import argparse
-import csv
 import json
 from collections import defaultdict
 
 import pandas as pd
 import utils
 
-
-def parse_summary(f):
-    parsed_data = {}
-    reader = csv.reader(f)
-    for row in reader:
-        parsed_data[row[0]] = row[1]
-    return parsed_data
-
-
 MAX_CELL = 2 * 10**5
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Starsolo summary")
-    parser.add_argument("--read_stats", help="cellReadsStats file")
-    parser.add_argument("--barcodes", help="barcode file")
-    parser.add_argument("--summary", help="summary file")
-    parser.add_argument("--sample", help="sample name")
-    args = parser.parse_args()
+
+def parse_read_stats(read_stats):
     dtypes = defaultdict(lambda: "int")
     dtypes["CB"] = "object"
     df = pd.read_csv(
-        args.read_stats, sep="\t", header=0, index_col=0, skiprows=[1], dtype=dtypes
+        read_stats, sep="\t", header=0, index_col=0, skiprows=[1], dtype=dtypes
     )  # skip first line cb not pass whitelist
-    umi_count = df["nUMIunique"]  # keep dataframe format
+    umi_count = df["nUMIunique"]
     df = df.loc[
         :, ["cbMatch", "cbPerfect", "genomeU", "genomeM", "exonic", "intronic", "exonicAS", "intronicAS", "countedU"]
     ]
@@ -49,28 +34,61 @@ if __name__ == "__main__":
     intergenic = mapped - exonic - intronic - antisense
     counted_uniq = int(s["countedU"])
     data_dict = {
-        "sample": args.sample,
-        "valid": valid,
-        "perfect": perfect,
-        "corrected": corrected,
-        "genomeU": genome_uniq,
-        "genomeM": genome_multi,
-        "mapped": mapped,
-        "exonic": exonic,
-        "intronic": intronic,
-        "antisense": antisense,
-        "intergenic": intergenic,
-        "countedU": counted_uniq,
+        "Corrected Barcodes": corrected / valid,
+        "Reads Mapped To Unique Loci": genome_uniq / valid,
+        "Reads Mapped To Multiple Loci": genome_multi / valid,
+        "Reads Mapped Uniquely To Transcriptome": counted_uniq / valid,
+        "Mapped Reads Assigned To Exonic Regions": exonic / mapped,
+        "Mapped Reads Assigned To Intronic Regions": intronic / mapped,
+        "Mapped Reads Assigned To Intergenic Regions": intergenic / mapped,
+        "Mapped Reads Assigned Antisense To Gene": antisense / mapped,
     }
-    read_stats_file = args.sample + ".read_stats.json"
-    with open(read_stats_file, "w") as f:
-        json.dump(data_dict, f)
+    for k in data_dict:
+        data_dict[k] = utils.get_frac(data_dict[k])
+
+    return umi_count, data_dict
+
+
+def parse_summary(summary):
+    data = utils.csv2dict(summary)
+    origin_new = {
+        "Number of Reads": "Raw Reads",
+        "Reads With Valid Barcodes": "Valid Reads",
+        "Sequencing Saturation": "Saturation",
+        "Estimated Number of Cells": "Estimated Number of Cells",
+        "Fraction of Unique Reads in Cells": "Fraction Reads in Cells",
+        "Mean Reads per Cell": "Mean Used Reads per Cell",
+        "Median UMI per Cell": "Median UMI per Cell",
+        "Median GeneFull_Ex50pAS per Cell": "Median Genes per Cell",
+        "Total GeneFull_Ex50pAS Detected": "Total Genes",
+    }
+    parsed_data = {}
+    for origin, new in origin_new.items():
+        parsed_data[new] = data[origin]
+    frac_names = {"Valid Reads", "Saturation", "Fraction Reads in Cells"}
+    for k in frac_names:
+        parsed_data[k] = utils.get_frac(parsed_data[k])
+    for k in set(origin_new.values()) - frac_names:
+        parsed_data[k] = int(parsed_data[k])
+    return parsed_data
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Starsolo summary")
+    parser.add_argument("--read_stats", help="cellReadsStats file")
+    parser.add_argument("--barcodes", help="barcode file")
+    parser.add_argument("--summary", help="summary file")
+    parser.add_argument("--sample", help="sample name")
+    args = parser.parse_args()
+
+    umi_count, data_dict = parse_read_stats(args.read_stats)
+    read_stats_file = args.sample + ".scrna.read.stats.json"
+    utils.write_json(data_dict, read_stats_file)
 
     # summary
-    parsed_data = parse_summary(open(args.summary))
-    summary_file = args.sample + ".summary.json"
-    with open(summary_file, "w") as f:
-        json.dump(parsed_data, f)
+    data_dict = parse_summary(args.summary)
+    summary_file = args.sample + ".scrna.starsolo.stats.json"
+    utils.write_json(data_dict, summary_file)
 
     # UMI count
     umi_count.loc[lambda x: x > 0]
@@ -112,6 +130,6 @@ if __name__ == "__main__":
     for i in range(MAX_CELL, n, 1000):
         plot_data[bg][i + 1] = int(umi_count.iloc[i])
 
-    umi_file = args.sample + ".umi_count.json"
+    umi_file = args.sample + ".scrna.umi_count.json"
     with open(umi_file, "w") as f:
         json.dump(plot_data, f)

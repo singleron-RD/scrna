@@ -4,5 +4,4 @@ channels:
   - bioconda
   - defaults
 dependencies:
-  - pip:
-      - multiqc-sgr==1.21.4
+  - bioconda::multiqc==1.21
