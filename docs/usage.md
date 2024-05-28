@@ -33,7 +33,12 @@ CONTROL_REP1,AEG588A1_S1_L004_R1_001.fastq.gz,AEG588A1_S1_L004_R2_001.fastq.gz
 
 ### Create `samplesheet.csv` using helper script
 
-When you have many samples, manually creating `samplesheet.csv` can be tedious and error-prone. There is a python script [samplesheet.py](../scripts/samplesheet.py) that can help you create a `samplesheet.csv` file.
+When you have many samples, manually creating `samplesheet.csv` can be tedious and error-prone. There is a python script [manifest.py](https://github.com/singleron-RD/sccore/blob/main/sccore/cli/manifest.py) that can help you create a `samplesheet.csv` file.
+
+```
+pip install sccore
+manifest -m manifest.csv -f /workspaces/scrna_test_data/GEXSCOPE-V2
+```
 
 `-m --manifest` Path to the manifest CSV file containing prefix-sample mapping.
 
@@ -43,31 +48,16 @@ manifest.csv
 
 ```
 sample,prefix
-Sample_X,test
-Sample_Y,Sample_Y
+X,prefixX
+Y,prefixY
 ```
 
 /workspaces/scrna_test_data/GEXSCOPE-V2
-
 ```
-Sample_Y_S1_L001_R1_001.fastq.gz  Sample_Y_S1_L002_R1_001.fastq.gz  test_R1.fastq.gz
-Sample_Y_S1_L001_R2_001.fastq.gz  Sample_Y_S1_L002_R2_001.fastq.gz  test_R2.fastq.gz
-```
-
-Run
-
-```
-python scripts/samplesheet.py -m manifest.csv -f /workspaces/scrna_test_data/GEXSCOPE-V2
+prefixY_S1_L001_R1_001.fastq.gz  prefixY_S1_L002_R1_001.fastq.gz  prefixX_R1.fastq.gz
+prefixY_S1_L001_R2_001.fastq.gz  prefixY_S1_L002_R2_001.fastq.gz  prefixX_R2.fastq.gz
 ```
 
-samplesheet.csv
-
-```
-sample,fastq_1,fastq_2
-Sample_X,/workspaces/scrna_test_data/GEXSCOPE-V2/test_R1.fastq.gz,/workspaces/scrna_test_data/GEXSCOPE-V2/test_R2.fastq.gz
-Sample_Y,/workspaces/scrna_test_data/GEXSCOPE-V2/Sample_Y_S1_L001_R1_001.fastq.gz,/workspaces/scrna_test_data/GEXSCOPE-V2/Sample_Y_S1_L001_R2_001.fastq.gz
-Sample_Y,/workspaces/scrna_test_data/GEXSCOPE-V2/Sample_Y_S1_L002_R1_001.fastq.gz,/workspaces/scrna_test_data/GEXSCOPE-V2/Sample_Y_S1_L002_R2_001.fastq.gz
-```
 
 ## Running the pipeline
 

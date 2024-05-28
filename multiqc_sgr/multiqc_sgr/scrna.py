@@ -82,6 +82,7 @@ class MultiqcModule(BaseMultiqcModule):
                 "title": "Raw Reads",
                 "description": "Number of reads in the input file",
                 "scale": "blue",
+                "format": "{:,.0f}",
                 "hidden": True,
             },
             "Valid Reads": {
@@ -164,12 +165,13 @@ class MultiqcModule(BaseMultiqcModule):
                 "hidden": True,
             },
             "Estimated Number of Cells": {
-                "title": "N Cells",
+                "title": "Number of Cells",
                 "description": "Estimated number of cells",
                 "scale": "blue",
+                "format": "{:,.0f}",
             },
             "Fraction Reads in Cells": {
-                "title": "% Reads in Cells",
+                "title": "Reads in Cells",
                 "description": "Percent of unique reads in cells",
                 "max": 100,
                 "min": 0,
@@ -180,16 +182,25 @@ class MultiqcModule(BaseMultiqcModule):
                 "title": "Mean Reads",
                 "description": "Mean number of reads used per cell",
                 "scale": "blue",
+                "format": "{:,.0f}",
             },
             "Median UMI per Cell": {
                 "title": "Median UMI",
                 "description": "Median number of UMIs per cell",
                 "scale": "blue",
+                "format": "{:,.0f}",
             },
             "Median Genes per Cell": {
                 "title": "Median Genes",
                 "description": "Median number of genes per cell",
                 "scale": "blue",
+                "format": "{:,.0f}",
+            },
+            "Total Genes": {
+                "title": "Total Genes",
+                "description": "Total number of genes detected",
+                "scale": "blue",
+                "format": "{:,.0f}",
             },
             "Saturation": {
                 "title": "Saturation",
