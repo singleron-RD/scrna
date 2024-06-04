@@ -10,7 +10,7 @@ include { PROTOCOL_CMD           } from '../modules/local/protocol_cmd'
 include { STARSOLO               } from '../modules/local/starsolo'
 include { STARSOLO_SUMMARY       } from '../modules/local/starsolo_summary'
 include { SUBSAMPLE              } from '../modules/local/subsample'
-include { MULTIQC                } from '../modules/local/multiqc_sgr/main'
+include { MULTIQC                } from '../modules/local/multiqc_sgr'
 
 include { paramsSummaryMap       } from 'plugin/nf-validation'
 include { paramsSummaryMultiqc   } from '../subworkflows/nf-core/utils_nfcore_pipeline'

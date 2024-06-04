@@ -26,14 +26,11 @@ process MULTIQC {
     def config = multiqc_config ? "--config $multiqc_config" : ''
     def extra_config = extra_multiqc_config ? "--config $extra_multiqc_config" : ''
     def logo = multiqc_logo ? /--cl-config 'custom_logo: "${multiqc_logo}"'/ : ''
-    def is_docker = workflow.profile.tokenize(',').intersect(['docker', 'singularity']).size() >= 1
-    def pipuser = is_docker ? '--user' : ''
-    def pythonuser = is_docker ? 'export PYTHONNOUSERSITE=0' : 'export PYTHONNOUSERSITE=1'
     """
     cp -r -L ./${multiqc_plugin} ./multiqc.plugin
     if [ -d ./multiqc.plugin/build ]; then rm -r ./multiqc.plugin/build; fi
-    pip install ./multiqc.plugin --no-cache-dir --no-deps --force-reinstall $pipuser
-    $pythonuser
+    pip install ./multiqc.plugin --no-cache-dir --no-deps --force-reinstall --user
+    export PYTHONNOUSERSITE=0
     python -m site
     multiqc \\
         --force \\
