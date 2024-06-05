@@ -147,6 +147,13 @@ When you run the above command, Nextflow automatically pulls the pipeline code f
 nextflow pull singleron-RD/scrna
 ```
 
+> [!NOTE]
+> This command might fail if you have trouble connecting to github. In this case, you can manually git clone the master branch and run with the path to the folder.
+> ```
+> git clone https://github.com/singleron-RD/scrna.git
+> nextflow run /workspace/pipeline/scrna ...
+> ```
+
 ### Reproducibility
 
 It is a good idea to specify a pipeline version when running the pipeline on your data. This ensures that a specific version of the pipeline code and software are used when you run your pipeline. If you keep using the same tag, you'll be running the same version of the pipeline, even if there have been changes to the code since.
