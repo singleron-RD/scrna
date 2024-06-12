@@ -65,7 +65,6 @@ workflow SCRNA {
     // create cmd
     PROTOCOL_CMD (
         ch_samplesheet,
-        star_genome,
         "${projectDir}/assets/",
         params.protocol,
     )

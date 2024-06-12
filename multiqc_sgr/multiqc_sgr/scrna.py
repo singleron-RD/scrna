@@ -179,7 +179,7 @@ class MultiqcModule(BaseMultiqcModule):
                 "scale": "green",
             },
             "Mean Used Reads per Cell": {
-                "title": "Mean Reads",
+                "title": "Mean Used Reads",
                 "description": "Mean number of reads used per cell",
                 "scale": "blue",
                 "format": "{:,.0f}",

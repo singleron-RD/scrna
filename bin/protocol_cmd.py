@@ -83,16 +83,7 @@ class Starsolo:
         If UMI+CB length is not equal to the barcode read length, specify barcode read length with --soloBarcodeReadLength.
         To avoid checking of barcode read length, specify soloBarcodeReadLength 0
         """
-        prefix = self.args.sample + "."
-        cmd = (
-            "STAR \\\n"
-            f"{self.cb_umi_args} \\\n"
-            f"--genomeDir {self.args.genomeDir} \\\n"
-            f"--readFilesIn {self.args.fq2} {self.args.fq1} \\\n"
-            f"--readFilesCommand {self.read_command} \\\n"
-            f"--outFileNamePrefix {prefix} \\\n"
-            f"{self.args.ext_args} "
-        )
+        cmd = " ".join([self.cb_umi_args, f"--readFilesCommand {self.read_command}"])
         logger.info(cmd)
         with open(self.cmd_fn, "w") as f:
             f.write(cmd)
@@ -107,12 +98,10 @@ if __name__ == "__main__":
     """
     parser = argparse.ArgumentParser()
     parser.add_argument("--sample", required=True)
-    parser.add_argument("--genomeDir", required=True)
     parser.add_argument("--fq1", required=True)
     parser.add_argument("--fq2", required=True)
     parser.add_argument("--assets_dir", required=True)
     parser.add_argument("--protocol", required=True)
-    parser.add_argument("--ext_args", required=True)
     parser.add_argument("--whitelist")
     parser.add_argument("--pattern")
     # add version
