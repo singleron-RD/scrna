@@ -10,9 +10,10 @@
 
 ## Pipeline tools
 
-- [FastQC](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/)
+- [STARSolo](https://www.biorxiv.org/content/10.1101/2021.05.05.442755v1)
 
-  > Andrews, S. (2010). FastQC: A Quality Control Tool for High Throughput Sequence Data [Online].
+  > Benjamin Kaminow, Dinar Yunusov, Alexander Dobin. STARsolo: accurate, fast and versatile mapping/quantification of single-cell and single-nucleus RNA-seq data.
+bioRxiv 2021.05.05.442755; doi: 10.1101/2021.05.05.442755
 
 - [MultiQC](https://pubmed.ncbi.nlm.nih.gov/27312411/)
 
