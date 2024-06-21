@@ -5,7 +5,7 @@
 
 ## Samplesheet input
 
-You will need to create a samplesheet with information about the samples you would like to analyse before running the pipeline. Use this parameter to specify its location. It has to be a comma-separated file with 3 columns, and a header row as shown in the examples below.
+You will need to create a samplesheet with information about the samples you would like to analyse before running the pipeline. Use this parameter to specify its location. It has to be a comma-separated file with 3 columns, and a header row as shown in the examples below. An example `samplesheet.csv` can be found in the [test data repository](https://github.com/singleron-RD/scrna_test_data/tree/master/GEXSCOPE-V2-human).
 
 ```bash
 --input '[path to samplesheet file]'
@@ -22,14 +22,7 @@ You will need to create a samplesheet with information about the samples you wou
 
 ### Multiple runs of the same sample
 
-The `sample` identifiers have to be the same when you have re-sequenced the same sample more than once e.g. to increase sequencing depth. The pipeline will concatenate the raw reads before performing any downstream analysis. Below is an example for the same sample sequenced across 3 lanes:
-
-```csv title="samplesheet.csv"
-sample,fastq_1,fastq_2
-CONTROL_REP1,AEG588A1_S1_L002_R1_001.fastq.gz,AEG588A1_S1_L002_R2_001.fastq.gz
-CONTROL_REP1,AEG588A1_S1_L003_R1_001.fastq.gz,AEG588A1_S1_L003_R2_001.fastq.gz
-CONTROL_REP1,AEG588A1_S1_L004_R1_001.fastq.gz,AEG588A1_S1_L004_R2_001.fastq.gz
-```
+The `sample` identifiers have to be the same when you have re-sequenced the same sample more than once e.g. to increase sequencing depth. The pipeline will concatenate the raw reads before performing any downstream analysis. 
 
 ### Create `samplesheet.csv` using helper script
 
@@ -40,24 +33,11 @@ pip install sccore
 manifest -m manifest.csv -f /workspaces/scrna_test_data/GEXSCOPE-V2
 ```
 
-`-m --manifest` Path to the manifest CSV file containing prefix-sample mapping.
+Recursively search the specified folders for fastq files and (optional) matched barcode files.
 
-`-f --folders` Comma-separated paths to folders to search for fastq files.
+`-m --manifest` Path to the manifest CSV file containing mappings between fastq file prefixes and sample names. An example `manifest.csv` can be found in the [test data repository](https://github.com/singleron-RD/scrna_test_data/tree/master/GEXSCOPE-V2-human).
 
-manifest.csv
-
-```
-sample,prefix
-X,prefixX
-Y,prefixY
-```
-
-/workspaces/scrna_test_data/GEXSCOPE-V2
-```
-prefixY_S1_L001_R1_001.fastq.gz  prefixY_S1_L002_R1_001.fastq.gz  prefixX_R1.fastq.gz
-prefixY_S1_L001_R2_001.fastq.gz  prefixY_S1_L002_R2_001.fastq.gz  prefixX_R2.fastq.gz
-```
-
+`-f --folders` Comma-separated paths to folders to search for fastq files. If `--match` is used, all `barcode.tsv.gz` files with sample name in the full path will also be searched.
 
 ## Running the pipeline
 
@@ -85,9 +65,6 @@ work                # Directory containing the nextflow working files
 If you wish to repeatedly use the same parameters for multiple runs, rather than specifying each flag in the command, you can specify these in a params file.
 
 Pipeline settings can be provided in a `yaml` or `json` file via `-params-file <file>`.
-
-> [!WARNING]
-> Do not use `-c <file>` to specify parameters as this will result in errors. Custom config files specified with `-c` must only be used for [tuning process resource specifications](https://nf-co.re/docs/usage/configuration#tuning-workflow-resources), other infrastructural tweaks (such as output directories), or module arguments (args).
 
 The above pipeline run specified with a params file in yaml format:
 
@@ -212,6 +189,15 @@ Specify this when restarting a pipeline. Nextflow will use cached results from a
 
 You can also supply a run name to resume a specific run: `-resume [run-name]`. Use the `nextflow log` command to show previous run names.
 
+### `-bg`
+
+Nextflow handles job submissions and supervises the running jobs. The Nextflow process must run until the pipeline is finished.
+
+The Nextflow `-bg` flag launches Nextflow in the background, detached from your terminal so that the workflow does not stop if you log out of your session. The logs are saved to a file.
+
+Alternatively, you can use `screen` / `tmux` or similar tool to create a detached session which you can log back into at a later time.
+Some HPC setups also allow you to run nextflow within a cluster job submitted your job scheduler (from where it submits more jobs).
+
 ### `-c`
 
 Specify the path to a specific config file (this is a core Nextflow command). See the [nf-core website documentation](https://nf-co.re/usage/configuration) for more information.
@@ -251,15 +237,6 @@ We recommend providing a compute `params.vm_type` of `Standard_D16_v3` VMs by de
 
 Note that the choice of VM size depends on your quota and the overall workload during the analysis.
 For a thorough list, please refer the [Azure Sizes for virtual machines in Azure](https://docs.microsoft.com/en-us/azure/virtual-machines/sizes).
-
-## Running in the background
-
-Nextflow handles job submissions and supervises the running jobs. The Nextflow process must run until the pipeline is finished.
-
-The Nextflow `-bg` flag launches Nextflow in the background, detached from your terminal so that the workflow does not stop if you log out of your session. The logs are saved to a file.
-
-Alternatively, you can use `screen` / `tmux` or similar tool to create a detached session which you can log back into at a later time.
-Some HPC setups also allow you to run nextflow within a cluster job submitted your job scheduler (from where it submits more jobs).
 
 ## Nextflow memory requirements
 
