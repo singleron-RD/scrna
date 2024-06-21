@@ -107,6 +107,15 @@ When running data from the same genome later, you can provide `star_genome` to s
 star_genome: "/workspaces/test/outs/star_genome/human.GRCh38.99.MT/"
 ```
 
+### Cell-calling algorithm
+
+STARsolo implements two [cell-calling algorithms](https://github.com/alexdobin/STAR/blob/master/docs/STARsolo.md#cell-filtering-calling): Knee filtering(`cellranger2.2`) and EmptyDrop-like filtering(`EmptyDrops_CR`). EmptyDrop-like filtering considers more barcodes with low UMI as real cells, which helps to recover immune cells with low RNA content, but there is also a risk of including more background barcodes.
+
+The cell-calling algorithm is controlled by the `soloCellFilter` parameter, for example
+```yaml
+soloCellFilter: EmptyDrops_CR
+```
+
 ### Running the pipeline with test data
 
 This pipeline contains a small test data. The test config file can be found [here](../conf/test.config).
