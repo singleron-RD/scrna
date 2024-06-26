@@ -84,3 +84,61 @@ def add_log(func):
 
     wrapper.logger = logger
     return wrapper
+
+
+def write_multiqc(data, sample, assay, step):
+    fn = f"{sample}.{assay}.{step}.json"
+    write_json(data, fn)
+
+
+MAX_CELL = 10**5
+
+
+def get_umi_count(rbs, umis, cbs, sample):
+    """
+    Args:
+        rbs: raw barcodes
+        umis: umi count
+        cbs: cell barcodes
+    """
+    a = [(umi, bc) for umi, bc in zip(umis, rbs) if umi > 0]
+    a.sort(reverse=True)
+    cbs = set(cbs)
+    plot_data = {}
+    n = len(a)
+    first_noncell = n - 1
+    for i, (umi, bc) in enumerate(a):
+        if bc not in cbs:
+            first_noncell = i
+            break
+    print(f"first non-cell barcode rank: {first_noncell}")
+    last_cell = 0
+    for i in range(min(n - 1, MAX_CELL), -1, -1):
+        bc = a[i][1]
+        if bc in cbs:
+            last_cell = i
+            break
+    pure = sample + ".cells.pure" + f"({first_noncell}/{first_noncell}, 100%)"
+    bg_cells = n - first_noncell
+    bg = sample + ".cells.background" + f"(0/{bg_cells}, 0%)"
+    plot_data[pure] = {}
+    plot_data[bg] = {}
+    for i in range(first_noncell):
+        plot_data[pure][i + 1] = int(a[i][0])
+
+    n_mix = last_cell - first_noncell + 1
+    if n_mix != 0:
+        n_total = len(cbs)
+        n_mix_cell = n_total - first_noncell
+        mix_rate = round(n_mix_cell / n_mix * 100, 2)
+        mix = sample + ".cells.mix" + f"({n_mix_cell}/{n_mix}, {mix_rate}%)"
+        plot_data[mix] = {}
+        for i in range(first_noncell, last_cell + 1):
+            plot_data[mix][i + 1] = int(a[i][0])
+
+    for i in range(last_cell + 1, min(MAX_CELL, n), 10):
+        plot_data[bg][i + 1] = int(a[i][0])
+    # do not record every umi count
+    for i in range(MAX_CELL, n, 1000):
+        plot_data[bg][i + 1] = int(a[i][0])
+    return plot_data

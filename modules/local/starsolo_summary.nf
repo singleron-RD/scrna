@@ -6,9 +6,7 @@ process STARSOLO_SUMMARY {
     container "biocontainers/pandas:1.5.2"
 
     input:
-    tuple val(meta), path(read_stats)
-    path summary
-    path barcodes
+    tuple val(meta), path(read_stats), path(summary), path(barcodes)
 
     output:
     tuple val(meta), path("*.json"), emit: json

@@ -8,6 +8,7 @@ include { FILTER_GTF             } from '../modules/local/filter_gtf'
 include { STAR_GENOME            } from '../modules/local/star_genome'
 include { PROTOCOL_CMD           } from '../modules/local/protocol_cmd'
 include { STARSOLO               } from '../modules/local/starsolo'
+include { CELL_CALLING           } from '../modules/local/cell_calling'
 include { STARSOLO_SUMMARY       } from '../modules/local/starsolo_summary'
 include { SUBSAMPLE              } from '../modules/local/subsample'
 include { MULTIQC                } from '../modules/local/multiqc_sgr'
@@ -85,19 +86,30 @@ workflow SCRNA {
     )
     ch_versions = ch_versions.mix(STARSOLO.out.versions.first())
 
-    // statsolo summary
-    STARSOLO_SUMMARY (
-        STARSOLO.out.read_stats,
-        STARSOLO.out.summary,
-        STARSOLO.out.barcodes,
+    // cell-calling
+    CELL_CALLING (
+        STARSOLO.out.raw_matrix,
+        params.soloCellFilter,
     )
+    ch_versions = ch_versions.mix(CELL_CALLING.out.versions.first())
+
+    // statsolo summary
+    ch_merge = STARSOLO.out.read_stats.concat(STARSOLO.out.summary).concat(CELL_CALLING.out.barcodes)           
+        .groupTuple()
+        .map {
+            it -> [ it[0], it[1][0], it[1][1], it[1][2] ]
+        }
+    STARSOLO_SUMMARY ( ch_merge )
     ch_multiqc_files = ch_multiqc_files.mix(STARSOLO_SUMMARY.out.json.collect{it[1]})
 
+    // subsample
     if (params.run_subsample) {
-        SUBSAMPLE (
-            STARSOLO.out.bam_sorted,
-            STARSOLO.out.barcodes,
-        )
+        ch_merge = STARSOLO.out.bam_sorted.concat(CELL_CALLING.out.barcodes)                
+                .groupTuple()
+                .map {
+                    it -> [it[0], it[1][0], it[1][1]]
+                }
+        SUBSAMPLE ( ch_merge )
         ch_multiqc_files = ch_multiqc_files.mix(SUBSAMPLE.out.json.collect{it[1]})
     }
 
