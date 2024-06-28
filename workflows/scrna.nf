@@ -72,15 +72,10 @@ workflow SCRNA {
     ch_versions = ch_versions.mix(PROTOCOL_CMD.out.versions.first())
     ch_multiqc_files = ch_multiqc_files.mix(PROTOCOL_CMD.out.json.collect{it[1]})
 
-    ch_input = ch_samplesheet.concat(PROTOCOL_CMD.out.starsolo_cmd)
-                .groupTuple()
-                .map {
-                    it -> [it[0], it[1][0], it[1][1].text]
-                }
-
     // starsolo
+    ch_merge = ch_samplesheet.join(PROTOCOL_CMD.out.starsolo_cmd.map{ [it[0], it[1].text] })
     STARSOLO (
-        ch_input,
+        ch_merge,
         star_genome,
         "${projectDir}/assets/",
     )
@@ -94,21 +89,13 @@ workflow SCRNA {
     ch_versions = ch_versions.mix(CELL_CALLING.out.versions.first())
 
     // statsolo summary
-    ch_merge = STARSOLO.out.read_stats.concat(STARSOLO.out.summary).concat(CELL_CALLING.out.filtered_matrix)           
-        .groupTuple()
-        .map {
-            it -> [ it[0], it[1][0], it[1][1], it[1][2] ]
-        }
+    ch_merge = STARSOLO.out.read_stats.join(STARSOLO.out.summary).join(CELL_CALLING.out.filtered_matrix)           
     STARSOLO_SUMMARY ( ch_merge )
     ch_multiqc_files = ch_multiqc_files.mix(STARSOLO_SUMMARY.out.json.collect{it[1]})
 
     // subsample
     if (params.run_subsample) {
-        ch_merge = STARSOLO.out.bam_sorted.concat(CELL_CALLING.out.barcodes)                
-                .groupTuple()
-                .map {
-                    it -> [it[0], it[1][0], it[1][1]]
-                }
+        ch_merge = STARSOLO.out.bam_sorted.join(CELL_CALLING.out.barcodes)                
         SUBSAMPLE ( ch_merge )
         ch_multiqc_files = ch_multiqc_files.mix(SUBSAMPLE.out.json.collect{it[1]})
     }
