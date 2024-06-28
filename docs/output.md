@@ -7,6 +7,7 @@
   - [star\_genome](#star_genome)
   - [protocol\_cmd](#protocol_cmd)
   - [starsolo](#starsolo)
+  - [cell\_calling](#cell_calling)
   - [starsolo\_summary](#starsolo_summary)
   - [multiqc-sgr](#multiqc-sgr)
   - [pipeline\_info](#pipeline_info)
@@ -16,7 +17,7 @@
 # Main Output
 
 - `multiqc/multiqc_report.html` HTML report containing QC metrics.
-- `starsolo/{sample}.matrix/filtered` Gene expression matrix file contains only cell barcodes. This file should be used as input to downstream analysis tools such as Seurat and Scanpy.
+- `cell_calling/{sample}.matrix/filtered` Gene expression matrix file contains only cell barcodes. This file should be used as input to downstream analysis tools such as Seurat and Scanpy.
   
 Downstream analysis code snippet using [Seurat V5](https://satijalab.org/seurat/articles/pbmc3k_tutorial)
 ```R
@@ -83,11 +84,15 @@ When you have questions, [STAR’s github issue](https://github.com/alexdobin/ST
 > [!NOTE]
 > The command line arguments in this STARsolo documentation may not be up to date. For the latest STARSolo arguments, please refer to The STAR Manual.
 
-**Main output files**
+**Output files**
 
-- `{sample}.matrix/raw` Gene expression matrix file contains all barcodes(background + cell) from the barcode whitelist.
-- `{sample}.matrix/filtered` Gene expression matrix file contains only cell barcodes.
 - `{sample}.Aligned.sortedByCoord.out.bam` Bam file contains coordinate-sorted reads aligned to the genome.
+
+## cell_calling
+Run the cell filtering algorithm on the previously generated raw matrix.
+
+**Output files**
+- `{sample}.matrix` Raw and filtering matrix.
 
 ## starsolo_summary
 

@@ -104,7 +104,7 @@ class MultiqcModule(BaseMultiqcModule):
             },
             "Reads Mapped To Unique Loci": {
                 "title": "Unique Reads",
-                "description": "Percent of reads mapped uniquely to genome",
+                "description": "Percent of valid reads mapped to unique loci on the genome",
                 "max": 100,
                 "min": 0,
                 "suffix": "%",
@@ -112,8 +112,8 @@ class MultiqcModule(BaseMultiqcModule):
                 "hidden": True,
             },
             "Reads Mapped To Multiple Loci": {
-                "title": "Multi-Loci Reads",
-                "description": "Percent of reads mapped to multiple loci",
+                "title": "Multi Reads",
+                "description": "Percent of valid reads mapped to multiple loci on the genome",
                 "max": 100,
                 "min": 0,
                 "suffix": "%",
@@ -122,7 +122,7 @@ class MultiqcModule(BaseMultiqcModule):
             },
             "Reads Mapped Uniquely To Transcriptome": {
                 "title": "Counted Unique Reads",
-                "description": "Percent of reads mapped uniquely to transcriptome; These reads are used for UMI counting",
+                "description": "Percent of valid reads mapped uniquely to transcriptome; These reads are used for UMI counting",
                 "max": 100,
                 "min": 0,
                 "suffix": "%",

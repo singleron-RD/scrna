@@ -94,7 +94,7 @@ workflow SCRNA {
     ch_versions = ch_versions.mix(CELL_CALLING.out.versions.first())
 
     // statsolo summary
-    ch_merge = STARSOLO.out.read_stats.concat(STARSOLO.out.summary).concat(CELL_CALLING.out.barcodes)           
+    ch_merge = STARSOLO.out.read_stats.concat(STARSOLO.out.summary).concat(CELL_CALLING.out.filtered_matrix)           
         .groupTuple()
         .map {
             it -> [ it[0], it[1][0], it[1][1], it[1][2] ]

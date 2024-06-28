@@ -11,8 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Refactor the code to generate the HTML report.
 
 
-## v1.2.0 - [2024-06]
+## v1.2.0 - [2024-06-28]
 
 ### `Changed`
 - Reduce the memory usage of the `subsample` module.
-- 
+- Refactor cell-calling as a separate module; this way, changing the cell calling parameters does not require re-doing the time-consuming starsolo mapping and quantification step.

@@ -14,6 +14,7 @@ process CELL_CALLING {
     output:
     tuple val(meta), path("${meta.id}.matrix/")       , emit: matrix
     tuple val(meta), path("${meta.id}.matrix/filtered/barcodes.tsv.gz") , emit: barcodes
+    tuple val(meta), path("${meta.id}.matrix/filtered") , emit: filtered_matrix
     path  "versions.yml"                      , emit: versions
 
     script:

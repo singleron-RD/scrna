@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import argparse
+import os
 from collections import defaultdict
 
 import pandas as pd
@@ -10,14 +11,28 @@ from __init__ import ASSAY
 MAX_CELL = 2 * 10**5
 FEATURE_FILE_NAME = "features.tsv.gz"
 BARCODE_FILE_NAME = "barcodes.tsv.gz"
+MATRIX_FILE_NAME = "matrix.mtx.gz"
 
 
 class StarsoloSummary:
     def __init__(self, args):
         self.args = args
-        self.cbs = utils.read_one_col(self.args.barcodes)
-
+        barcodes_file = os.path.join(args.filtered_matrix, BARCODE_FILE_NAME)
+        self.matrix_file = os.path.join(args.filtered_matrix, MATRIX_FILE_NAME)
+        self.cbs = utils.read_one_col(barcodes_file)
         self.stats = {}
+
+    def add_total_genes(self):
+        n = 0
+        genes = set()
+        with utils.openfile(self.matrix_file) as f:
+            for line in f:
+                n += 1
+                if n <= 3:
+                    continue
+                gene = line.split(" ")[0]
+                genes.add(gene)
+        self.stats["Total Genes"] = len(genes)
 
     def parse_read_stats(self):
         dtypes = defaultdict(lambda: "int")
@@ -78,7 +93,7 @@ class StarsoloSummary:
         median_genes_per_cell = int(df.loc[self.cbs, "nGenesUnique"].median())
         data_dict = {
             "Estimated Number of Cells": n_cells,
-            "Fraction of Reads in Cells": fraction_reads_in_cells,
+            "Fraction Reads in Cells": fraction_reads_in_cells,
             "Mean Used Reads per Cell": mean_used_reads_per_cell,
             "Median UMI per Cell": median_umi_per_cell,
             "Median Genes per Cell": median_genes_per_cell,
@@ -104,8 +119,8 @@ class StarsoloSummary:
         self.stats.update(parsed_data)
 
     def run(self):
-        self.cbs = utils.read_one_col(self.args.barcodes)
         rbs, umis = self.parse_read_stats()
+        self.add_total_genes()
         self.parse_summary()
         plot_data = utils.get_umi_count(rbs, umis, self.cbs, self.args.sample)
         utils.write_multiqc(plot_data, args.sample, ASSAY, "umi_count")
@@ -115,7 +130,7 @@ class StarsoloSummary:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Starsolo summary")
     parser.add_argument("--read_stats", help="cellReadsStats file")
-    parser.add_argument("--barcodes", help="barcode file")
+    parser.add_argument("--filtered_matrix", help="filtered_matrix")
     parser.add_argument("--summary", help="summary file")
     parser.add_argument("--sample", help="sample name")
     args = parser.parse_args()
