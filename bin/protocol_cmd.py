@@ -24,24 +24,27 @@ class Starsolo:
         if str(fq1_list[0]).endswith(".gz"):
             self.read_command = "zcat"
 
-        if args.protocol == "auto":
-            runner = parse_protocol.Auto(fq1_list, args.sample)
-            protocol, protocol_meta = runner.run()
-        else:
-            protocol = args.protocol
-            protocol_meta = parse_protocol.get_protocol_dict(args.assets_dir)[protocol]
-        self.protocol = protocol
-
-        if protocol == "new":
+        if args.protocol == "new":
+            protocol = "new"
             pattern = args.pattern
             whitelist_str = args.whitelist
         else:
+            if args.protocol == "auto":
+                runner = parse_protocol.Auto(fq1_list, args.sample)
+                protocol, protocol_meta = runner.run()
+            else:
+                protocol = args.protocol
+                protocol_meta = parse_protocol.get_protocol_dict(args.assets_dir)[protocol]
             pattern = protocol_meta["pattern"]
             whitelist_str = " ".join(protocol_meta.get("bc", []))
+        self.protocol = protocol
 
         pattern_args = Starsolo.get_solo_pattern(pattern)
         if not whitelist_str:
             whitelist_str = args.whitelist if args.whitelist else "None"
+        whitelist_str = whitelist_str.strip()
+        if whitelist_str.endswith(".gz"):
+            whitelist_str = f"<(gzip -cdf {whitelist_str})"
         self.cb_umi_args = pattern_args + f" --soloCBwhitelist {whitelist_str} "
 
         # out cmd

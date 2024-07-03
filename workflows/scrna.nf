@@ -74,10 +74,12 @@ workflow SCRNA {
 
     // starsolo
     ch_merge = ch_samplesheet.join(PROTOCOL_CMD.out.starsolo_cmd.map{ [it[0], it[1].text] })
+    ch_whitelist = params.whitelist ? params.whitelist : []
     STARSOLO (
         ch_merge,
         star_genome,
         "${projectDir}/assets/",
+        ch_whitelist,
     )
     ch_versions = ch_versions.mix(STARSOLO.out.versions.first())
 

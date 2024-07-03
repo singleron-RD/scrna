@@ -11,6 +11,7 @@ process STARSOLO {
     tuple val(meta), path(reads, stageAs: "?/*"), val(starsolo_cmd)
     path index
     path assets_dir
+    path whitelist
 
     output:
     tuple val(meta), path("${meta.id}.Solo.out/GeneFull_Ex50pAS/raw") , emit: raw_matrix
