@@ -43,6 +43,8 @@ class Starsolo:
         if not whitelist_str:
             whitelist_str = args.whitelist if args.whitelist else "None"
         whitelist_str = whitelist_str.strip()
+        if whitelist_str.startswith("http"):
+            whitelist_str = whitelist_str.split("/")[-1]
         if whitelist_str.endswith(".gz"):
             whitelist_str = f"<(gzip -cdf {whitelist_str})"
         self.cb_umi_args = pattern_args + f" --soloCBwhitelist {whitelist_str} "
