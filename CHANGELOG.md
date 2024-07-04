@@ -17,7 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Reduce the memory usage of the `subsample` module.
 - Refactor cell-calling as a separate module; this way, changing the cell calling parameters does not require re-doing the time-consuming starsolo mapping and quantification step.
 
-## 1.2.1 - [2-24-07-04]
+## 1.2.1 - [2024-07-04]
 
 ### Fixed
 - Fix pipeline not working when protocol is setting to `new`.
