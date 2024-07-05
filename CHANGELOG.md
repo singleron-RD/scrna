@@ -20,4 +20,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## 1.2.1 - [2024-07-04]
 
 ### Fixed
-- Fix pipeline not working when protocol is setting to `new`.
+- Fix an issue where the pipeline do not work when `--protocol` is set to `new`.
