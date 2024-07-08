@@ -28,6 +28,8 @@ process PROTOCOL_CMD {
 
     // separate forward from reverse pairs
     def (forward, reverse) = reads.collate(2).transpose()
+    def pattern = params.pattern ? "--pattern ${params.pattern}" : ""
+    def whitelist = params.whitelist ? "--whitelist \'${params.whitelist}\'" : ""
     """
     protocol_cmd.py \\
         --sample ${prefix} \\
@@ -35,8 +37,8 @@ process PROTOCOL_CMD {
         --fq2 ${reverse.join( "," )} \\
         --assets_dir ${assets_dir} \\
         --protocol ${protocol} \\
-        --pattern ${params.pattern} \\
-        --whitelist \"${params.whitelist}\"   
+        $pattern \\
+        $whitelist
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
