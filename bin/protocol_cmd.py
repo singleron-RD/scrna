@@ -5,6 +5,7 @@ import sys
 
 import parse_protocol
 import utils
+from __init__ import ASSAY
 
 logger = utils.get_logger(__name__)
 SOLOFEATURE = "GeneFull_Ex50pAS"
@@ -39,7 +40,19 @@ class Starsolo:
             whitelist_str = " ".join(protocol_meta.get("bc", []))
         self.protocol = protocol
 
-        pattern_args = Starsolo.get_solo_pattern(pattern)
+        if protocol == "GEXSCOPE-V3":
+            v3_linker = "ATCG" * 2
+            bc = "N" * 9
+            pattern_args = (
+                "--soloType CB_UMI_Complex "
+                "--soloCBposition 2_0_2_8 2_13_2_21 3_1_3_9 "
+                "--soloUMIposition 3_10_3_21 "
+                f"--soloAdapterSequence {bc}{v3_linker}{bc}{v3_linker} "
+                "--soloAdapterMismatchesNmax 1 "
+                "--soloCBmatchWLtype EditDist_2 "
+            )
+        else:
+            pattern_args = Starsolo.get_solo_pattern(pattern)
         if not whitelist_str:
             whitelist_str = args.whitelist if args.whitelist else "None"
         whitelist_str = whitelist_str.strip()
@@ -83,7 +96,7 @@ class Starsolo:
         starsolo_cb_umi_args = " ".join([f"--soloType {solo_type} ", cb_str, umi_str])
         return starsolo_cb_umi_args
 
-    def write_cmd(self):
+    def run(self):
         """
         If UMI+CB length is not equal to the barcode read length, specify barcode read length with --soloBarcodeReadLength.
         To avoid checking of barcode read length, specify soloBarcodeReadLength 0
@@ -93,9 +106,7 @@ class Starsolo:
         with open(self.cmd_fn, "w") as f:
             f.write(cmd)
 
-    def write_stats(self, assay):
-        fn = f"{self.args.sample}.{assay}.protocol.stats.json"
-        utils.write_json({"Protocol": self.protocol}, fn)
+        utils.write_multiqc({"Protocol": self.protocol}, self.args.sample, ASSAY, "protocol.stats")
 
 
 if __name__ == "__main__":
@@ -115,5 +126,4 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     runner = Starsolo(args)
-    runner.write_cmd()
-    runner.write_stats("scrna")
+    runner.run()

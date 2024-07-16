@@ -186,6 +186,7 @@ class Auto:
     GEXSCOPE-MicroBead
     GEXSCOPE-V1
     GEXSCOPE-V2
+    GEXSCOPE-V3
     """
 
     def __init__(self, fq1_list, sample, assets_dir="assets/", max_read=10000):
@@ -249,10 +250,13 @@ class Auto:
         >>> seq = "NCAGATTC" + "TCGGTGACAGCCATAT" + "GTACGCAA" + "CGTAGTCAGAAGCTGA" + "CTGAGCCA"  + "TCCGAAGCC"
         >>> runner.seq_protocol(seq)
         'GEXSCOPE-V1'
-        >>> seq = "ATCGATCGATCG" + "ATCGATCG" + "C" + "TTTTTTTTTT"
+        >>> seq = "GCTAGCTAGCTA" + "GCTAGCTA" + "C" + "TTTTTTTTTT"
         >>> runner.seq_protocol(seq)
         'GEXSCOPE-MicroBead'
         """
+        for start in range(9, 12):
+            if seq[start : start + 8] == "ATCGATCG":
+                return "GEXSCOPE-V3"
 
         for protocol in ["GEXSCOPE-V2", "GEXSCOPE-V1"]:
             if self.is_protocol(seq, protocol):
