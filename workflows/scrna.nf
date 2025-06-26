@@ -4,13 +4,6 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 include { FASTQC                 } from '../modules/nf-core/fastqc/main'
-include { FILTER_GTF             } from '../modules/local/filter_gtf'
-include { STAR_GENOME            } from '../modules/local/star_genome'
-include { PROTOCOL_CMD           } from '../modules/local/protocol_cmd'
-include { STARSOLO               } from '../modules/local/starsolo'
-include { CELL_CALLING           } from '../modules/local/cell_calling'
-include { STARSOLO_SUMMARY       } from '../modules/local/starsolo_summary'
-include { SUBSAMPLE              } from '../modules/local/subsample'
 include { MULTIQC                } from '../modules/local/multiqc_sgr'
 
 include { paramsSummaryMap       } from 'plugin/nf-validation'
@@ -23,6 +16,65 @@ include { methodsDescriptionText } from '../subworkflows/local/utils_nfcore_scrn
     RUN MAIN WORKFLOW
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
+
+
+process MKREF {
+    cpus params.thread
+    memory params.limitBAMsortRAM
+
+    container "quay.io/singleron-rd/celescope:v2.6.1"
+
+    input:
+    path fasta
+    path gtf
+    val genome_name
+
+    output:
+    path "${genome_name}_filtered", emit: genomeDir
+
+
+    script:
+    """
+    celescope utils mkgtf ${gtf} ${gtf}.filtered
+    celescope rna mkref \
+    --genome_name ${genome_name}_filtered \
+    --fasta ${fasta} \
+    --gtf ${gtf}.filtered \
+    --mt_gene_list mt_gene_list.txt \
+    --thread ${params.thread}
+
+    mkdir ${genome_name}_filtered && find . -maxdepth 1 -type f -exec mv {} ${genome_name}_filtered/ \\;
+    """
+
+}
+
+
+process CELESCOPE {
+    tag "$meta.id"
+    cpus params.thread
+    memory params.limitBAMsortRAM
+
+    container "quay.io/singleron-rd/celescope:v2.6.1"
+
+    input:
+    tuple val(meta), path(reads, stageAs: "?/*")
+    path genomeDir
+
+    output:
+    tuple val(meta), path("${meta.id}/${meta.id}_report.html"), emit: report
+    tuple val(meta), path("${meta.id}/outs/filtered"), emit: filtered_matrix
+
+    script:
+    def (r1, r2) = reads.collate(2).transpose()
+    r1 = r1.join(",")
+    r2 = r2.join(",")
+    
+    """
+    celescope rna sample --outdir ./${meta.id}/00.sample --sample ${meta.id} --chemistry ${params.chemistry}  --fq1 ${r1}
+    celescope rna starsolo --outdir .//${meta.id}/01.starsolo --sample ${meta.id} --thread ${params.thread} --chemistry ${params.chemistry} --adapter_3p AAAAAAAAAAAA --genomeDir ${genomeDir} --outFilterMatchNmin ${params.outFilterMatchNmin} --soloCellFilter "${params.soloCellFilter}" --limitBAMsortRAM ${params.limitBAMsortRAM} --soloFeatures "GeneFull_Ex50pAS Gene" --soloCBmatchWLtype 1MM --report_soloFeature GeneFull_Ex50pAS  --fq1 ${r1} --fq2 ${r2}
+    celescope rna analysis --outdir .//${meta.id}/02.analysis --sample ${meta.id} --thread ${params.thread} --genomeDir ${genomeDir} --matrix_file .//${meta.id}/outs/filtered 
+    """
+}
 
 
 workflow SCRNA {
@@ -45,64 +97,24 @@ workflow SCRNA {
     }
 
     // STAR genome
-    def star_genome = null
-    if (params.star_genome) {
-        star_genome = params.star_genome
-    } else {
-        FILTER_GTF(
-            params.gtf,
-            params.keep_attributes,
-        )
-        ch_gtf = FILTER_GTF.out.filtered_gtf
-        STAR_GENOME(
-            params.fasta,
-            ch_gtf,
+    def genomeDir = null
+    if (params.genomeDir) {
+        genomeDir = params.genomeDir
+    }  else {
+        MKREF (
+            file(params.fasta, checkIfExists: true),
+            file(params.gtf, checkIfExists: true),
             params.genome_name,
-            params.star_cpus,
         )
-        ch_versions = ch_versions.mix(STAR_GENOME.out.versions.first())
-        star_genome = STAR_GENOME.out.index
+        genomeDir = MKREF.out.genomeDir
     }
 
-    // create cmd
-    PROTOCOL_CMD (
+    // celescope
+    CELESCOPE(
         ch_samplesheet,
-        "${projectDir}/assets/",
-        params.protocol,
+        genomeDir,
     )
-    ch_versions = ch_versions.mix(PROTOCOL_CMD.out.versions.first())
-    ch_multiqc_files = ch_multiqc_files.mix(PROTOCOL_CMD.out.json.collect{it[1]})
 
-    // starsolo
-    ch_merge = ch_samplesheet.join(PROTOCOL_CMD.out.starsolo_cmd.map{ [it[0], it[1].text] })
-    ch_whitelist = params.whitelist ? params.whitelist : []
-    STARSOLO (
-        ch_merge,
-        star_genome,
-        "${projectDir}/assets/",
-        ch_whitelist,
-        params.star_cpus,
-    )
-    ch_versions = ch_versions.mix(STARSOLO.out.versions.first())
-
-    // cell-calling
-    CELL_CALLING (
-        STARSOLO.out.raw_matrix,
-        params.soloCellFilter,
-    )
-    ch_versions = ch_versions.mix(CELL_CALLING.out.versions.first())
-
-    // statsolo summary
-    ch_merge = STARSOLO.out.read_stats.join(STARSOLO.out.summary).join(CELL_CALLING.out.filtered_matrix)           
-    STARSOLO_SUMMARY ( ch_merge )
-    ch_multiqc_files = ch_multiqc_files.mix(STARSOLO_SUMMARY.out.json.collect{it[1]})
-
-    // subsample
-    if (params.run_subsample) {
-        ch_merge = STARSOLO.out.bam_sorted.join(CELL_CALLING.out.barcodes)                
-        SUBSAMPLE ( ch_merge )
-        ch_multiqc_files = ch_multiqc_files.mix(SUBSAMPLE.out.json.collect{it[1]})
-    }
 
     //
     // Collate and save software versions
